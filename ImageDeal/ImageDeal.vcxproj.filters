@@ -18,9 +18,33 @@
     <ClInclude Include="include\ImageDeal.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="include\common.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ColorConver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FindSkin.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\GrindSkin.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ImageFilter.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\DealImage.cpp">
+    <ClCompile Include="src\ColorConver.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FindSkin.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GrindSkin.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ImageFilter.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
