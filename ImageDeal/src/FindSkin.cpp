@@ -1,19 +1,6 @@
 #include "FindSkin.h"
 #include "ColorConver.h"
 #include <cmath>
-float GetGaussianValue(float x, float mean, float var)
-{
-	float t = -0.5f * (x - mean) * (x - mean) / var;
-	return exp(t);
-}
-float GetProbability(int R, int G, int B, float meanCb, float varCb, float meanCr, float varCr)
-{
-	int Y, Cb, Cr;
-	RGBToYCbCr(R, G, B, &Y, &Cb, &Cr);
-	float pcb = GetGaussianValue(Cb, meanCb, varCb);
-	float pcr = GetGaussianValue(Cr, meanCr, varCr);
-	return 2.0f * pcb * pcr;
-};
 int F_SkinDetectionBGR(unsigned char* srcData, int width, int height, int stride)
 {
 	int ret = 0;

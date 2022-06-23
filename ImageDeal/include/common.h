@@ -51,3 +51,8 @@ const int RGBGCrI = (int)(RGBGCrF * (1 << Shift) + 0.5);
 const int RGBBYI = (int)(RGBBYF * (1 << Shift) + 0.5);
 const int RGBBCbI = (int)(RGBBCbF * (1 << Shift) + 0.5);
 const int RGBBCrI = (int)(RGBBCrF * (1 << Shift) + 0.5);
+int ModeLinearLight(int basePixel, int mixPixel);
+int ModeSuperposition(int basePixel, int mixPixel);
+int ModeSmoothLight(int basePixel, int mixPixel);
+float GetGaussianValue(float x, float mean, float var);
+float GetProbability(int R, int G, int B, float meanCb, float varCb, float meanCr, float varCr);
