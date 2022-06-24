@@ -171,7 +171,7 @@ int F_Filter512(unsigned  char*  srcData, int  width, int  height, int  stride, 
 {
 	int  i, j, r, g, b, offset, pos, nx, ny, k;
 	unsigned  char*  pSrc = srcData;
-	offset = stride - (width * 4);
+	offset = stride * width;
 	for (j = 0; j < height; j++)
 	{
 		for (i = 0; i < width; i++)
@@ -182,68 +182,15 @@ int F_Filter512(unsigned  char*  srcData, int  width, int  height, int  stride, 
 			k = (b >> 2);
 			nx = (int)(r >> 2) + ((k - ((k >> 3) << 3)) << 6);
 			ny = (int)(((b >> 5) << 6) + (g >> 2));
-			pos = (nx * 4) + (ny * 512 * 4);
+			pos = (nx * stride) + (ny * 512 * stride);
 			pSrc[0] = Map[pos];
 			pSrc[1] = Map[pos + 1];
 			pSrc[2] = Map[pos + 2];
-			pSrc += 4;
+			pSrc += stride;
 		}
 		pSrc += offset;
 	}
 	return    0;
-};
-static int SurfaceBlurOneChannel(unsigned char* srcData, int width, int height, float* map, int radius)
-{
-	int ret = 0;
-	int i, j, n, m, len;
-	len = sizeof(unsigned char) * width * height;
-	unsigned char* tempData = (unsigned char*)malloc(len);
-	int* tmap = (int*)malloc(sizeof(int) * height);
-	if (tempData == NULL || tmap == NULL)
-	{
-		ret = 1;
-		return ret;
-	}
-	if (NULL == tempData || NULL == tmap)
-		return 1;
-	for (i = 0; i < height; i++)
-	{
-		tmap[i] = i * width;
-	}
-	memcpy(tempData, srcData, len);
-	int kx, ky;
-	len = (radius << 1) + 1;
-	int gray = 0;
-	float sum, sum_a;
-	int pos, pos_a;
-	unsigned char val;
-	for (j = 0; j < height; j++)
-	{
-		for (i = 0; i < width; i++)
-		{
-			pos = i + tmap[j];
-			val = tempData[pos];
-			sum = 0;
-			sum_a = 0;
-			for (n = -radius; n <= radius; n++)
-			{
-				ky = CLIP3(j + n, 0, height - 1);
-				pos_a = tmap[ky];
-				for (m = -radius; m <= radius; m++)
-				{
-					kx = CLIP3(i + m, 0, width - 1);
-					gray = tempData[kx + pos_a];
-					sum_a += map[gray - val];
-					sum += gray * map[gray - val];
-				}
-			}
-			gray = sum_a == 0 ? gray : sum / sum_a;//(int)(sum / MAX2(sum_a, 0.1));
-			srcData[pos] = gray;//CLIP3(gray, 0 , 255);
-		}
-	}
-	free(tempData);
-	free(tmap);
-	return ret;
 };
 int F_SurfaceBlur(unsigned char* srcData, int width, int height, int stride, int radius, int threshold)
 {
@@ -251,59 +198,112 @@ int F_SurfaceBlur(unsigned char* srcData, int width, int height, int stride, int
 	{
 		return 0;
 	}
-	unsigned char* yData = (unsigned char*)malloc(sizeof(unsigned char) * width * height);
-	unsigned char* cbData = (unsigned char*)malloc(sizeof(unsigned char) * width * height);
-	unsigned char* crData = (unsigned char*)malloc(sizeof(unsigned char) * width * height);
-	unsigned char* pSrc = srcData;
-	int Y, CB, CR;
-	unsigned char* pY = yData;
-	unsigned char* pCb = cbData;
-	unsigned char* pCr = crData;
-	for (int j = 0; j < height; j++)
-	{
-		for (int i = 0; i < width; i++)
+	if (stride == 1) {
+		float matrixItems[511];//255*2+1
+		float* map = &matrixItems[255];
+		float fv = threshold * 2.5f;
+		for (int i = 0; i < 256; i++)
 		{
-			RGBToYCbCr(pSrc[2], pSrc[1], pSrc[0], &Y, &CB, &CR);
-			*pY = Y;
-			*pCb = CB;
-			*pCr = CR;
-			pY++;
-			pCb++;
-			pCr++;
-			pSrc += 4;
+			map[-i] = map[i] = MAX2(1 - i / fv, 0);
 		}
-	}
-	float matrixItems[511];//255*2+1
-	float* items = &matrixItems[255];
-	float fv = threshold * 2.5f;
-	for (int i = 0; i < 256; i++)
-	{
-		items[-i] = items[i] = MAX2(1 - i / fv, 0);
-	}
-	SurfaceBlurOneChannel(yData, width, height, items, radius);
-	SurfaceBlurOneChannel(cbData, width, height, items, radius);
-	SurfaceBlurOneChannel(crData, width, height, items, radius);
-	pSrc = srcData;
-	pY = yData;
-	pCb = cbData;
-	pCr = crData;
-	int R, G, B;
-	for (int j = 0; j < height; j++)
-	{
-		for (int i = 0; i < width; i++)
+		int ret = 0;
+		int i, j, n, m, len;
+		len = sizeof(unsigned char) * width * height;
+		unsigned char* tempData = (unsigned char*)malloc(len);
+		int* tmap = (int*)malloc(sizeof(int) * height);
+		if (tempData == NULL || tmap == NULL)
 		{
-			YCbCrToRGB(*pY, *pCb, *pCr, &R, &G, &B);
-			pSrc[0] = B;
-			pSrc[1] = G;
-			pSrc[2] = R;
-			pY++;
-			pCb++;
-			pCr++;
-			pSrc += 4;
+			ret = 1;
+			return ret;
 		}
+		if (NULL == tempData || NULL == tmap)
+			return 1;
+		for (i = 0; i < height; i++)
+		{
+			tmap[i] = i * width;
+		}
+		memcpy(tempData, srcData, len);
+		int kx, ky;
+		len = (radius << 1) + 1;
+		int gray = 0;
+		float sum, sum_a;
+		int pos, pos_a;
+		unsigned char val;
+		for (j = 0; j < height; j++)
+		{
+			for (i = 0; i < width; i++)
+			{
+				pos = i + tmap[j];
+				val = tempData[pos];
+				sum = 0;
+				sum_a = 0;
+				for (n = -radius; n <= radius; n++)
+				{
+					ky = CLIP3(j + n, 0, height - 1);
+					pos_a = tmap[ky];
+					for (m = -radius; m <= radius; m++)
+					{
+						kx = CLIP3(i + m, 0, width - 1);
+						gray = tempData[kx + pos_a];
+						sum_a += map[gray - val];
+						sum += gray * map[gray - val];
+					}
+				}
+				gray = sum_a == 0 ? gray : sum / sum_a;//(int)(sum / MAX2(sum_a, 0.1));
+				srcData[pos] = gray;//CLIP3(gray, 0 , 255);
+			}
+		}
+		free(tempData);
+		free(tmap);
 	}
-	free(yData);
-	free(cbData);
-	free(crData);
+	else if (stride == 3) {
+		unsigned char* yData = (unsigned char*)malloc(sizeof(unsigned char) * width * height);
+		unsigned char* cbData = (unsigned char*)malloc(sizeof(unsigned char) * width * height);
+		unsigned char* crData = (unsigned char*)malloc(sizeof(unsigned char) * width * height);
+		unsigned char* pSrc = srcData;
+		int Y, CB, CR;
+		unsigned char* pY = yData;
+		unsigned char* pCb = cbData;
+		unsigned char* pCr = crData;
+		for (int j = 0; j < height; j++)
+		{
+			for (int i = 0; i < width; i++)
+			{
+				RGBToYCbCr(pSrc[2], pSrc[1], pSrc[0], &Y, &CB, &CR);
+				*pY = Y;
+				*pCb = CB;
+				*pCr = CR;
+				pY++;
+				pCb++;
+				pCr++;
+				pSrc += stride;
+			}
+		}
+		F_SurfaceBlur(yData, width, height, 1,radius,threshold);
+		F_SurfaceBlur(cbData, width, height, 1, radius, threshold);
+		F_SurfaceBlur(crData, width, height, 1, radius, threshold);
+		pSrc = srcData;
+		pY = yData;
+		pCb = cbData;
+		pCr = crData;
+		int R, G, B;
+		for (int j = 0; j < height; j++)
+		{
+			for (int i = 0; i < width; i++)
+			{
+				YCbCrToRGB(*pY, *pCb, *pCr, &R, &G, &B);
+				pSrc[0] = B;
+				pSrc[1] = G;
+				pSrc[2] = R;
+				pY++;
+				pCb++;
+				pCr++;
+				pSrc += stride;
+			}
+		}
+		free(yData);
+		free(cbData);
+		free(crData);
+	}
 	return 0;
 }

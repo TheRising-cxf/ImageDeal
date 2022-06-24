@@ -8,7 +8,7 @@
 int F_SkinWhite(unsigned char* srcData, int width, int height, int stride, unsigned char* lutData, int ratio)
 {
 	int ret = 0;
-	int length = height * stride;
+	int length = width * height * stride;
 	unsigned char* tempData = (unsigned char*)malloc(sizeof(unsigned char) * length);
 	memcpy(tempData, srcData, sizeof(unsigned char) * length);
 	unsigned char* skinPDF = (unsigned char*)malloc(sizeof(unsigned char) * length);
@@ -32,9 +32,9 @@ int F_SkinWhite(unsigned char* srcData, int width, int height, int stride, unsig
 			pSrc[0] = CLIP3((b * a + pSrc[0] * (255 - a)) / 255, 0, 255);
 			pSrc[1] = CLIP3((g * a + pSrc[1] * (255 - a)) / 255, 0, 255);
 			pSrc[2] = CLIP3((r * a + pSrc[2] * (255 - a)) / 255, 0, 255);
-			pSrc += 4;
-			pLut += 4;
-			pSkin += 4;
+			pSrc += stride;
+			pLut += stride;
+			pSkin += stride;
 		}
 	}
 	free(tempData);
@@ -44,7 +44,7 @@ int F_SkinWhite(unsigned char* srcData, int width, int height, int stride, unsig
 int F_SkinWhiteCurve(unsigned char* srcData, int width, int height, int stride, int belta, int ratio)
 {
 	int ret = 0;
-	int length = height * stride;
+	int length = width * height * stride;
 	unsigned char* skinPDF = (unsigned char*)malloc(sizeof(unsigned char) * length);
 	memcpy(skinPDF, srcData, sizeof(unsigned char) * length);
 	ret = F_SkinProbability(skinPDF, width, height, stride);
@@ -69,8 +69,8 @@ int F_SkinWhiteCurve(unsigned char* srcData, int width, int height, int stride, 
 			pSrc[0] = CLIP3((b * a + pSrc[0] * (255 - a)) / 255, 0, 255);
 			pSrc[1] = CLIP3((g * a + pSrc[1] * (255 - a)) / 255, 0, 255);
 			pSrc[2] = CLIP3((r * a + pSrc[2] * (255 - a)) / 255, 0, 255);
-			pSrc += 4;
-			pSkin += 4;
+			pSrc += stride;
+			pSkin += stride;
 		}
 	}
 	free(skinPDF);
@@ -79,13 +79,14 @@ int F_SkinWhiteCurve(unsigned char* srcData, int width, int height, int stride, 
 int F_SkinWhitePS(unsigned char* srcData, int width, int height, int stride, int ratio)
 {
 	int ret = 0;
-	int length = height * stride;
+	int length = width * height * stride;
 	unsigned char* skinPDF = (unsigned char*)malloc(sizeof(unsigned char) * length);
 	memcpy(skinPDF, srcData, sizeof(unsigned char) * length);
 	ret = F_SkinProbability(skinPDF, width, height, stride);
 	int maskSmoothRadius = 3;
 	ret = F_FastGaussFilter(skinPDF, width, height, stride, maskSmoothRadius);
 	unsigned char* pSrc = srcData;
+
 	unsigned char* pSkin = skinPDF;
 	for (int j = 0; j < height; j++)
 	{
@@ -104,8 +105,8 @@ int F_SkinWhitePS(unsigned char* srcData, int width, int height, int stride, int
 			pSrc[0] = CLIP3((b * a + pSrc[0] * (255 - a)) / 255, 0, 255);
 			pSrc[1] = CLIP3((g * a + pSrc[1] * (255 - a)) / 255, 0, 255);
 			pSrc[2] = CLIP3((r * a + pSrc[2] * (255 - a)) / 255, 0, 255);
-			pSrc += 4;
-			pSkin += 4;
+			pSrc += stride;
+			pSkin += stride;
 		}
 	}
 	free(skinPDF);

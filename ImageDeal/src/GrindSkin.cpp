@@ -52,10 +52,10 @@ int F_GrindskinByGaussFilter(unsigned char* srcData, int width, int height, int 
 int F_Softskin_ChannelMethod(unsigned char* srcData, int width, int height, int stride, unsigned char* lightMap, int ratio)
 {
 	int ret = 0;
-	unsigned char* greenData = (unsigned char*)malloc(sizeof(unsigned char) * stride * height);
-	unsigned char* gaussData = (unsigned char*)malloc(sizeof(unsigned char) * stride * height);
-	unsigned char* curveData = (unsigned char*)malloc(sizeof(unsigned char) * stride * height);
-	unsigned char* skinData = (unsigned char*)malloc(sizeof(unsigned char) * stride * height);
+	unsigned char* greenData = (unsigned char*)malloc(sizeof(unsigned char)* width * stride * height);
+	unsigned char* gaussData = (unsigned char*)malloc(sizeof(unsigned char) * width * stride * height);
+	unsigned char* curveData = (unsigned char*)malloc(sizeof(unsigned char) * width * stride * height);
+	unsigned char* skinData = (unsigned char*)malloc(sizeof(unsigned char) * width * stride * height);
 	unsigned char* pSrc = srcData;
 	unsigned char* pGreen = greenData;
 	for (int j = 0; j < height; j++)
@@ -69,8 +69,8 @@ int F_Softskin_ChannelMethod(unsigned char* srcData, int width, int height, int 
 			pGreen += 4;
 		}
 	}
-	memcpy(gaussData, greenData, sizeof(unsigned char) * height * stride);
-	memcpy(curveData, srcData, sizeof(unsigned char) * height * stride);
+	memcpy(gaussData, greenData, sizeof(unsigned char) * width * height * stride);
+	memcpy(curveData, srcData, sizeof(unsigned char) * width * height * stride);
 	ret = F_Filter512(curveData, width, height, stride, lightMap);
 	float hpRadius = 10.0f * width * height / (594 * 677);
 	ret = F_FastGaussFilter(gaussData, width, height, stride, hpRadius);
@@ -90,13 +90,13 @@ int F_Softskin_ChannelMethod(unsigned char* srcData, int width, int height, int 
 			pGreen[0] = CLIP3((pCurve[0] * t + (255 - t) * pSrc[0]) / 255, 0, 255);
 			pGreen[1] = CLIP3((pCurve[1] * t + (255 - t) * pSrc[1]) / 255, 0, 255);
 			pGreen[2] = CLIP3((pCurve[2] * t + (255 - t) * pSrc[2]) / 255, 0, 255);
-			pGreen += 4;
-			pGauss += 4;
-			pSrc += 4;
-			pCurve += 4;
+			pGreen += stride;
+			pGauss += stride;
+			pSrc += stride;
+			pCurve += stride;
 		}
 	}
-	memcpy(skinData, greenData, sizeof(unsigned char) * height * stride);
+	memcpy(skinData, greenData, sizeof(unsigned char)* width * height * stride);
 	int maskSmoothRadius = 3 * width * height / (594 * 677);
 	ret = F_SkinProbability(skinData, width, height, stride);
 	ret = F_FastGaussFilter(skinData, width, height, stride, maskSmoothRadius);
@@ -115,9 +115,9 @@ int F_Softskin_ChannelMethod(unsigned char* srcData, int width, int height, int 
 			pSrc[0] = CLIP3((pSrc[0] * (128 - k) + tb * k) >> 7, 0, 255);
 			pSrc[1] = CLIP3((pSrc[1] * (128 - k) + tg * k) >> 7, 0, 255);
 			pSrc[2] = CLIP3((pSrc[2] * (128 - k) + tr * k) >> 7, 0, 255);
-			pSrc += 4;
-			pGauss += 4;
-			pGreen += 4;
+			pSrc += stride;
+			pGauss += stride;
+			pGreen += stride;
 		}
 	}
 	free(gaussData);
@@ -129,7 +129,7 @@ int F_Softskin_ChannelMethod(unsigned char* srcData, int width, int height, int 
 int F_Softskin_DetailsAddingMethod(unsigned char* srcData, int width, int height, int stride, int ratio, float K)
 {
 	int ret = 0;
-	int len = sizeof(unsigned char) * height * stride;
+	int len = sizeof(unsigned char) * width * height * stride;
 	unsigned char*coarseSmoothData = (unsigned char*)malloc(len);
 	unsigned char*fineSmoothData = (unsigned char*)malloc(len);
 	memcpy(coarseSmoothData, srcData, len);
@@ -165,10 +165,10 @@ int F_Softskin_DetailsAddingMethod(unsigned char* srcData, int width, int height
 			detailsCoarse = pFine[2] - pCoarse[2];
 			pSrc[2] = (unsigned char)CLIP3(pCoarse[2] + (255 - alpha) * detailsCoarse / 255 + (1.0f - K0 * K) * detailsFine, 0, 255);
 
-			pSrc += 4;
-			pCoarse += 4;
-			pFine += 4;
-			pSkin += 4;
+			pSrc += stride;
+			pCoarse += stride;
+			pFine += stride;
+			pSkin += stride;
 		}
 	}
 	free(skinPDF);
@@ -179,7 +179,7 @@ int F_Softskin_DetailsAddingMethod(unsigned char* srcData, int width, int height
 int F_Softskin_HP(unsigned char* srcData, int width, int height, int stride, int textureRatio, int ratio)
 {
 	int ret = 0;
-	int length = height * stride;
+	int length = width * height * stride;
 	unsigned char* smoothData = (unsigned char*)malloc(sizeof(unsigned char) * length);
 	unsigned char* hpData = (unsigned char*)malloc(sizeof(unsigned char) * length);
 	memcpy(smoothData, srcData, sizeof(unsigned char) * length);
@@ -204,9 +204,9 @@ int F_Softskin_HP(unsigned char* srcData, int width, int height, int stride, int
 			pHP[1] = CLIP3(pSmooth[1] - pSrc[1] + 128, 0, 255);
 			pHP[2] = CLIP3(pSmooth[2] - pSrc[2] + 128, 0, 255);
 
-			pHP += 4;
-			pSmooth += 4;
-			pSrc += 4;
+			pHP += stride;
+			pSmooth += stride;
+			pSrc += stride;
 		}
 	}
 	float hpRadius = 3.5f * textureRatio / 100.0f;
@@ -232,10 +232,10 @@ int F_Softskin_HP(unsigned char* srcData, int width, int height, int stride, int
 			pSrc[0] = CLIP3((hpb * k + pSrc[0] * (128 - k)) >> 7, 0, 255);
 			pSrc[1] = CLIP3((hpg * k + pSrc[1] * (128 - k)) >> 7, 0, 255);
 			pSrc[2] = CLIP3((hpr * k + pSrc[2] * (128 - k)) >> 7, 0, 255);
-			pSrc += 4;
-			pHP += 4;
-			pSmooth += 4;
-			pSkin += 4;
+			pSrc += stride;
+			pHP += stride;
+			pSmooth += stride;
+			pSkin += stride;
 		}
 	}
 	free(skinPDF);
@@ -246,11 +246,11 @@ int F_Softskin_HP(unsigned char* srcData, int width, int height, int stride, int
 int F_Softskin_A(unsigned char* srcData, int width, int height, int stride, unsigned char* lightMap, int ratio)
 {
 	int ret = 0;
-	unsigned char* greenData = (unsigned char*)malloc(sizeof(unsigned char) * stride * height);
-	unsigned char* gaussData = (unsigned char*)malloc(sizeof(unsigned char) * stride * height);
-	unsigned char* curveData = (unsigned char*)malloc(sizeof(unsigned char) * stride * height);
-	unsigned char* skinData = (unsigned char*)malloc(sizeof(unsigned char) * stride * height);
-	unsigned char* smoothData = (unsigned char*)malloc(sizeof(unsigned char) * stride * height);
+	unsigned char* greenData = (unsigned char*)malloc(sizeof(unsigned char)* width * stride * height);
+	unsigned char* gaussData = (unsigned char*)malloc(sizeof(unsigned char) * width * stride * height);
+	unsigned char* curveData = (unsigned char*)malloc(sizeof(unsigned char) * width * stride * height);
+	unsigned char* skinData = (unsigned char*)malloc(sizeof(unsigned char) * width * stride * height);
+	unsigned char* smoothData = (unsigned char*)malloc(sizeof(unsigned char) * width * stride * height);
 	unsigned char* pSrc = srcData;
 	unsigned char* pGreen = greenData;
 	for (int j = 0; j < height; j++)
@@ -260,8 +260,8 @@ int F_Softskin_A(unsigned char* srcData, int width, int height, int stride, unsi
 			pGreen[0] = pSrc[0];
 			pGreen[1] = pSrc[0];
 			pGreen[2] = pSrc[0];
-			pSrc += 4;
-			pGreen += 4;
+			pSrc += stride;
+			pGreen += stride;
 		}
 	}
 	memcpy(gaussData, greenData, sizeof(unsigned char) * height * stride);
@@ -285,10 +285,10 @@ int F_Softskin_A(unsigned char* srcData, int width, int height, int stride, unsi
 			pGreen[0] = CLIP3((pCurve[0] * t + (255 - t) * pSrc[0]) / 255, 0, 255);
 			pGreen[1] = CLIP3((pCurve[1] * t + (255 - t) * pSrc[1]) / 255, 0, 255);
 			pGreen[2] = CLIP3((pCurve[2] * t + (255 - t) * pSrc[2]) / 255, 0, 255);
-			pGreen += 4;
-			pGauss += 4;
-			pSrc += 4;
-			pCurve += 4;
+			pGreen += stride;
+			pGauss += stride;
+			pSrc += stride;
+			pCurve += stride;
 		}
 	}
 
@@ -320,10 +320,10 @@ int F_Softskin_A(unsigned char* srcData, int width, int height, int stride, unsi
 			pSrc[0] = CLIP3((pSrc[0] * (128 - k) + tb * k) >> 7, 0, 255);
 			pSrc[1] = CLIP3((pSrc[1] * (128 - k) + tg * k) >> 7, 0, 255);
 			pSrc[2] = CLIP3((pSrc[2] * (128 - k) + tr * k) >> 7, 0, 255);
-			pSrc += 4;
-			pGauss += 4;
-			pGreen += 4;
-			pSmooth += 4;
+			pSrc += stride;
+			pGauss += stride;
+			pGreen += stride;
+			pSmooth += stride;
 		}
 	}
 	free(gaussData);
@@ -336,7 +336,7 @@ int F_Softskin_A(unsigned char* srcData, int width, int height, int stride, unsi
 int F_Softskin_MixMethod(unsigned char* srcData, int width, int height, int stride, unsigned char* lightMap, int textureRatio, int ratio)
 {
 	int ret = 0;
-	int length = height * stride;
+	int length = width * height * stride;
 	unsigned char* smoothData = (unsigned char*)malloc(sizeof(unsigned char) * length);
 	unsigned char* tempData = (unsigned char*)malloc(sizeof(unsigned char) * length);
 	unsigned char* hpData = (unsigned char*)malloc(sizeof(unsigned char) * length);
@@ -364,10 +364,10 @@ int F_Softskin_MixMethod(unsigned char* srcData, int width, int height, int stri
 			pHP[0] = CLIP3(pSmooth[0] - pSrc[0] + 128, 0, 255);
 			pHP[1] = CLIP3(pSmooth[1] - pSrc[1] + 128, 0, 255);
 			pHP[2] = CLIP3(pSmooth[2] - pSrc[2] + 128, 0, 255);
-			pHP += 4;
-			pSmooth += 4;
-			pSrc += 4;
-			pSkin += 4;
+			pHP += stride;
+			pSmooth += stride;
+			pSrc += stride;
+			pSkin += stride;
 		}
 	}
 	float hpRadius = 3.1;
@@ -396,11 +396,11 @@ int F_Softskin_MixMethod(unsigned char* srcData, int width, int height, int stri
 			pSrc[0] = CLIP3((hpb * k + pTemp[0] * (128 - k)) >> 7, 0, 255);
 			pSrc[1] = CLIP3((hpg * k + pTemp[1] * (128 - k)) >> 7, 0, 255);
 			pSrc[2] = CLIP3((hpr * k + pTemp[2] * (128 - k)) >> 7, 0, 255);
-			pSrc += 4;
-			pHP += 4;
-			pSmooth += 4;
-			pSkin += 4;
-			pTemp += 4;
+			pSrc += stride;
+			pHP += stride;
+			pSmooth += stride;
+			pSkin += stride;
+			pTemp += stride;
 		}
 	}
 	free(skinPDF);
