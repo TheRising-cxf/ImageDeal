@@ -1,7 +1,7 @@
 #include "FindSkin.h"
 #include "ColorConver.h"
 #include <cmath>
-int F_SkinDetectionBGR(unsigned char* srcData, int width, int height, int stride)
+int F_SkinDetectionBGR(unsigned char* srcData, int width, int height, int channels)
 {
 	int ret = 0;
 	unsigned char* pSrc = srcData;
@@ -19,12 +19,12 @@ int F_SkinDetectionBGR(unsigned char* srcData, int width, int height, int stride
 				pSrc[1] = 0;
 				pSrc[2] = 0;
 			}
-			pSrc += stride;
+			pSrc += channels;
 		}
 	}
 	return ret;
 }
-int F_SkinDetectionHSV(unsigned char* srcData, int width, int height, int stride)
+int F_SkinDetectionHSV(unsigned char* srcData, int width, int height, int channels)
 {
 	int ret = 0;
 	unsigned char* pSrc = srcData;
@@ -45,12 +45,12 @@ int F_SkinDetectionHSV(unsigned char* srcData, int width, int height, int stride
 				pSrc[1] = 0;
 				pSrc[2] = 0;
 			}
-			pSrc += stride;
+			pSrc += channels;
 		}
 	}
 	return ret;
 }
-int F_SkinDetectionYCgCr(unsigned char* srcData, int width, int height, int stride)
+int F_SkinDetectionYCgCr(unsigned char* srcData, int width, int height, int channels)
 {
 	int ret = 0;
 	unsigned char* pSrc = srcData;
@@ -71,12 +71,12 @@ int F_SkinDetectionYCgCr(unsigned char* srcData, int width, int height, int stri
 				pSrc[1] = 0;
 				pSrc[2] = 0;
 			}
-			pSrc += stride;
+			pSrc += channels;
 		}
 	}
 	return ret;
 }
-int F_SkinProbability(unsigned char* srcData, int width, int height, int stride)
+int F_SkinProbability(unsigned char* srcData, int width, int height, int channels)
 {
 	int ret = 0;
 	float sum = 0, mean = 0, variance = 0;
@@ -90,7 +90,7 @@ int F_SkinProbability(unsigned char* srcData, int width, int height, int stride)
 			//meanCr-varCr:143-196
 			int gray = CLIP3(GetProbability(pSrc[2], pSrc[1], pSrc[0], 102, 196, 143, 196) * 255.0f, 0, 255);
 			pSrc[0] = pSrc[1] = pSrc[2] = gray;
-			pSrc += stride;
+			pSrc += channels;
 		}
 	}
 	return ret;

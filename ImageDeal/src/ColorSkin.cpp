@@ -5,18 +5,18 @@
 #include"FindSkin.h"
 #include"ImageFilter.h"
 #include"ColorSkin.h"
-int F_SkinWhite(unsigned char* srcData, int width, int height, int stride, unsigned char* lutData, int ratio)
+int F_SkinWhite(unsigned char* srcData, int width, int height, int channels, unsigned char* lutData, int ratio)
 {
 	int ret = 0;
-	int length = width * height * stride;
+	int length = width * height * channels;
 	unsigned char* tempData = (unsigned char*)malloc(sizeof(unsigned char) * length);
 	memcpy(tempData, srcData, sizeof(unsigned char) * length);
 	unsigned char* skinPDF = (unsigned char*)malloc(sizeof(unsigned char) * length);
 	memcpy(skinPDF, srcData, sizeof(unsigned char) * length);
-	ret = F_SkinProbability(skinPDF, width, height, stride);
+	ret = F_SkinProbability(skinPDF, width, height, channels);
 	int maskSmoothRadius = 3;
-	ret = F_FastGaussFilter(skinPDF, width, height, stride, maskSmoothRadius);
-	ret = F_Filter512(tempData, width, height, stride, lutData);
+	ret = F_FastGaussFilter(skinPDF, width, height, channels, maskSmoothRadius);
+	ret = F_Filter512(tempData, width, height, channels, lutData);
 	unsigned char* pSrc = srcData;
 	unsigned char* pLut = tempData;
 	unsigned char* pSkin = skinPDF;
@@ -32,24 +32,24 @@ int F_SkinWhite(unsigned char* srcData, int width, int height, int stride, unsig
 			pSrc[0] = CLIP3((b * a + pSrc[0] * (255 - a)) / 255, 0, 255);
 			pSrc[1] = CLIP3((g * a + pSrc[1] * (255 - a)) / 255, 0, 255);
 			pSrc[2] = CLIP3((r * a + pSrc[2] * (255 - a)) / 255, 0, 255);
-			pSrc += stride;
-			pLut += stride;
-			pSkin += stride;
+			pSrc += channels;
+			pLut += channels;
+			pSkin += channels;
 		}
 	}
 	free(tempData);
 	free(skinPDF);
 	return ret;
 };
-int F_SkinWhiteCurve(unsigned char* srcData, int width, int height, int stride, int belta, int ratio)
+int F_SkinWhiteCurve(unsigned char* srcData, int width, int height, int channels, int belta, int ratio)
 {
 	int ret = 0;
-	int length = width * height * stride;
+	int length = width * height * channels;
 	unsigned char* skinPDF = (unsigned char*)malloc(sizeof(unsigned char) * length);
 	memcpy(skinPDF, srcData, sizeof(unsigned char) * length);
-	ret = F_SkinProbability(skinPDF, width, height, stride);
+	ret = F_SkinProbability(skinPDF, width, height, channels);
 	int maskSmoothRadius = 3;
-	ret = F_FastGaussFilter(skinPDF, width, height, stride, maskSmoothRadius);
+	ret = F_FastGaussFilter(skinPDF, width, height, channels, maskSmoothRadius);
 	unsigned char* pSrc = srcData;
 	unsigned char* pSkin = skinPDF;
 	for (int j = 0; j < height; j++)
@@ -69,22 +69,22 @@ int F_SkinWhiteCurve(unsigned char* srcData, int width, int height, int stride, 
 			pSrc[0] = CLIP3((b * a + pSrc[0] * (255 - a)) / 255, 0, 255);
 			pSrc[1] = CLIP3((g * a + pSrc[1] * (255 - a)) / 255, 0, 255);
 			pSrc[2] = CLIP3((r * a + pSrc[2] * (255 - a)) / 255, 0, 255);
-			pSrc += stride;
-			pSkin += stride;
+			pSrc += channels;
+			pSkin += channels;
 		}
 	}
 	free(skinPDF);
 	return ret;
 }
-int F_SkinWhitePS(unsigned char* srcData, int width, int height, int stride, int ratio)
+int F_SkinWhitePS(unsigned char* srcData, int width, int height, int channels, int ratio)
 {
 	int ret = 0;
-	int length = width * height * stride;
+	int length = width * height * channels;
 	unsigned char* skinPDF = (unsigned char*)malloc(sizeof(unsigned char) * length);
 	memcpy(skinPDF, srcData, sizeof(unsigned char) * length);
-	ret = F_SkinProbability(skinPDF, width, height, stride);
+	ret = F_SkinProbability(skinPDF, width, height, channels);
 	int maskSmoothRadius = 3;
-	ret = F_FastGaussFilter(skinPDF, width, height, stride, maskSmoothRadius);
+	ret = F_FastGaussFilter(skinPDF, width, height, channels, maskSmoothRadius);
 	unsigned char* pSrc = srcData;
 
 	unsigned char* pSkin = skinPDF;
@@ -105,8 +105,8 @@ int F_SkinWhitePS(unsigned char* srcData, int width, int height, int stride, int
 			pSrc[0] = CLIP3((b * a + pSrc[0] * (255 - a)) / 255, 0, 255);
 			pSrc[1] = CLIP3((g * a + pSrc[1] * (255 - a)) / 255, 0, 255);
 			pSrc[2] = CLIP3((r * a + pSrc[2] * (255 - a)) / 255, 0, 255);
-			pSrc += stride;
-			pSkin += stride;
+			pSrc += channels;
+			pSkin += channels;
 		}
 	}
 	free(skinPDF);
