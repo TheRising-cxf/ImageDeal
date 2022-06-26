@@ -1135,3 +1135,228 @@ int F_BeepsFilter(unsigned char* srcData, int nWidth, int nHeight, int channels,
 	}
 	return 0;
 }
+//Fast mean filter based histagram computation
+int f_FastMeanFilter(unsigned char* srcData, int width, int height, int stride, int radius)
+{
+	int ret = 0;
+	if (radius == 0)
+		return ret;
+	if (radius > MIN2(width, height) / 2)
+		radius = (MIN2(width, height) / 2 - 0.5);
+	unsigned char* dstData = (unsigned char*)malloc(sizeof(unsigned char) * height * stride);
+	memset(dstData, 255, sizeof(unsigned char) * height * stride);
+	int unit = 4, t = 0, t1 = 0;
+	int i, j, k, len = width * height * unit;
+	int block = (radius << 1) + 1;
+	int winSize = block * block;
+	long sumB = 0, sumG = 0, sumR = 0;
+	unsigned char* pSrc = srcData;
+	int* temp = (int*)malloc(sizeof(int)* width * unit);
+	memset(temp, 0, sizeof(int) * width * unit);
+	for (k = -radius; k <= radius; k++)
+	{
+		for (j = 0; j < width; j++)
+		{
+			t = j * unit;
+			t1 = abs(k) * stride;
+			temp[t] += pSrc[t + t1];
+			temp[t + 1] += pSrc[t + 1 + t1];
+			temp[t + 2] += pSrc[t + 2 + t1];
+		}
+	}
+	for (i = 0; i < height; i++)
+	{
+		sumB = sumG = sumR = 0;
+		for (j = -radius; j <= radius; j++)
+		{
+			t = abs(j) * unit;
+			sumB += temp[t];
+			sumG += temp[t + 1];
+			sumR += temp[t + 2];
+		}
+		for (j = 0; j < width; j++)
+		{
+			t = j * unit + i * stride;
+			dstData[t] = (sumB / winSize);
+			dstData[t + 1] = (sumG / winSize);
+			dstData[t + 2] = (sumR / winSize);
+			if (j < width - 1)
+			{
+				t = abs(j - radius) * unit;
+				t1 = (j + radius + 1) % width * unit;
+				sumB = sumB - temp[t] + temp[t1];
+				sumG = sumG - temp[t + 1] + temp[t1 + 1];
+				sumR = sumR - temp[t + 2] + temp[t1 + 2];
+			}
+		}
+		if (i < height - 1)
+		{
+			for (k = 0; k < width; k++)
+			{
+				t = k * unit + abs(i - radius) * stride;
+				t1 = k * unit + (i + radius + 1) % height * stride;
+				temp[k * unit] = temp[k * unit] - pSrc[t] + pSrc[t1];
+				temp[k * unit + 1] = temp[k * unit + 1] - pSrc[t + 1] + pSrc[t1 + 1];
+				temp[k * unit + 2] = temp[k * unit + 2] - pSrc[t + 2] + pSrc[t1 + 2];
+			}
+		}
+	}
+	memcpy(srcData, dstData, sizeof(unsigned char) * height * stride);
+	free(dstData);
+	free(temp);
+	return ret;
+};
+//std mean filter
+int f_MeanFilter(unsigned char *srcData, int width, int height, int stride, int radius)
+{
+	int ret = 0;
+	if (radius == 0)
+		return ret;
+	int offset = stride - width * 4;
+	unsigned char* temp = (unsigned char*)malloc(sizeof(unsigned char) * height * stride);
+	memcpy(temp, srcData, sizeof(unsigned char) * height * stride);
+	int M = (radius * 2 + 1) * (radius * 2 + 1);
+	int sumr = 0, sumg = 0, sumb = 0;
+	unsigned char* pSrc = srcData;
+	for (int j = 0; j < height; j++)
+	{
+		for (int i = 0; i < width; i++)
+		{
+			sumr = sumg = sumb = 0;
+			for (int n = -radius; n <= radius; n++)
+			{
+				for (int m = -radius; m <= radius; m++)
+				{
+					int ny = CLIP3(j + n, 0, height - 1);
+					int nx = CLIP3(i + m, 0, width - 1);
+					int pos = nx * 4 + ny * stride;
+					sumb += temp[pos];
+					sumg += temp[pos + 1];
+					sumr += temp[pos + 2];
+				}
+			}
+			pSrc[0] = sumb / M;
+			pSrc[1] = sumg / M;
+			pSrc[2] = sumr / M;
+			pSrc += 4;
+		}
+		pSrc += offset;
+	}
+	free(temp);
+	return ret;
+};
+int f_Instagram1977LutFilter(unsigned char *srcData, int width, int height, int stride, unsigned char* Map)
+{
+	unsigned char* pSrc = srcData;
+	int offset = stride - width * 4;
+	for (int j = 0; j < height; j++)
+	{
+		for (int i = 0; i < width; i++)
+		{
+			pSrc[0] = Map[pSrc[0] * 4];
+			pSrc[1] = Map[pSrc[1] * 4 + 1];
+			pSrc[2] = Map[pSrc[2] * 4 + 2];
+			pSrc += 4;
+		}
+		pSrc += offset;
+	}
+	return 0;
+};
+int f_Instagram1977Filter(unsigned char* srcData, int width, int height, int stride)
+{
+	int ret = 0;
+	unsigned char MAP_R[256] = { 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 81, 82, 84, 85, 86, 88, 88, 89, 92, 93, 93, 95, 96, 98, 99, 100, 101, 103, 104, 106, 107, 107, 108, 110, 111, 112, 114, 115, 116, 117, 118, 119, 121, 122, 123, 125, 126, 126, 128, 130, 131, 132, 133, 134, 135, 136, 137, 138, 140, 141, 143, 144, 145, 145, 147, 148, 149, 150, 151, 152, 154, 154, 155, 156, 159, 159, 161, 162, 163, 164, 164, 165, 166, 167, 168, 169, 170, 171, 173, 173, 174, 176, 177, 178, 178, 180, 181, 182, 183, 183, 184, 185, 186, 187, 188, 189, 191, 192, 192, 193, 195, 196, 196, 198, 199, 200, 201, 202, 203, 204, 206, 206, 207, 207, 208, 210, 210, 211, 213, 214, 215, 215, 217, 218, 219, 220, 221, 222, 223, 223, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225 };
+	unsigned char MAP_G[256] = { 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 58, 59, 60, 61, 63, 64, 65, 66, 67, 69, 70, 71, 73, 73, 74, 75, 76, 78, 79, 80, 81, 83, 84, 85, 86, 87, 88, 89, 90, 91, 94, 95, 96, 96, 97, 98, 99, 100, 102, 104, 105, 106, 107, 108, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 122, 123, 124, 125, 126, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 142, 143, 143, 144, 144, 145, 146, 147, 148, 149, 150, 152, 153, 154, 155, 155, 156, 157, 158, 159, 160, 162, 163, 164, 165, 166, 167, 167, 167, 168, 169, 170, 172, 173, 174, 175, 176, 177, 178, 179, 179, 181, 182, 183, 183, 184, 185, 186, 187, 188, 189, 190, 191, 191, 192, 193, 194, 195, 196, 197, 197, 198, 199, 200, 202, 202, 202, 203, 204, 205, 206, 207, 208, 209, 209, 210, 212, 213, 214, 214, 214, 215, 216, 217, 217, 218, 219, 221, 222, 223, 223, 224, 225, 226, 226, 226, 227, 228, 229, 229, 231, 232, 233, 234, 234, 235, 236, 237, 237, 237, 238, 238, 239, 241, 242, 243, 243, 244, 245, 245, 246, 247, 248, 248, 249, 249, 251, 251, 252, 253, 253 };
+	unsigned char MAP_B[256] = { 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 66, 68, 69, 70, 71, 73, 75, 76, 77, 78, 79, 80, 82, 84, 85, 86, 87, 89, 90, 92, 93, 95, 96, 97, 98, 99, 102, 103, 104, 105, 106, 107, 109, 110, 111, 113, 115, 116, 117, 118, 119, 120, 122, 123, 124, 125, 126, 127, 129, 130, 131, 133, 134, 136, 137, 138, 139, 139, 140, 142, 143, 144, 145, 146, 147, 149, 150, 151, 152, 153, 154, 156, 157, 158, 159, 160, 160, 161, 163, 164, 165, 166, 167, 169, 170, 171, 172, 173, 174, 176, 177, 178, 179, 180, 181, 183, 184, 185, 186, 187, 187, 189, 190, 191, 192, 193, 194, 196, 197, 198, 199, 200, 201, 203, 204, 205, 205, 206, 207, 208, 210, 211, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212, 212 };
+	unsigned char* pSrc = srcData;
+	int offset = stride - width * 4;
+	for (int j = 0; j < height; j++)
+	{
+		for (int i = 0; i < width; i++)
+		{
+			pSrc[0] = MAP_B[pSrc[0]];
+			pSrc[1] = MAP_G[pSrc[1]];
+			pSrc[2] = MAP_R[pSrc[2]];
+			pSrc += 4;
+		}
+		pSrc += offset;
+	}
+	return ret;
+};
+int f_ConcaveMirrorFilter(unsigned char* srcData, int width, int height, int stride, int x, int y, int k)
+{
+	x = CLIP3(x, 0, width - 1);
+	y = CLIP3(y, 0, height - 1);
+	k = MAX2(k, 0);
+	int radius = 0;
+	float theta = 0;
+	int tX = 0;
+	int tY = 0;
+	int mapX = 0;
+	int mapY = 0;
+	int mapR = 0;
+	unsigned char* pSrc = srcData;
+	unsigned char* tempData = (unsigned char*)malloc(sizeof(unsigned char) * height * stride);
+	memcpy(tempData, srcData, sizeof(unsigned char) * height * stride);
+	int offset = stride - width * 4;
+	for (int j = 0; j < height; j++)
+	{
+		for (int i = 0; i < width; i++)
+		{
+			tX = i - x;
+			tY = j - y;
+			radius = k;;
+			float distance = (i - x) * (i - x) + (j - y) * (j - y);
+			float dis = sqrt(distance);
+			if (distance <= k * k && distance > 0)
+			{
+				mapX = floor(dis * (i - x) / k + x);
+				mapY = floor(dis * (j - y) / k + y);
+				pSrc[0] = tempData[mapX * 4 + mapY * stride];
+				pSrc[1] = tempData[mapX * 4 + mapY * stride + 1];
+				pSrc[2] = tempData[mapX * 4 + mapY * stride + 2];
+			}
+			pSrc += 4;
+		}
+		pSrc += offset;
+	}
+	free(tempData);
+	return 0;
+}
+int f_ConvexMirrorFilter(unsigned char* srcData, int width, int height, int stride, int x, int y, int k)
+{
+	x = CLIP3(x, 0, width - 1);
+	y = CLIP3(y, 0, height - 1);
+	k = MAX2(k, 0);
+	int radius = 0;
+	float theta = 0;
+	int tX = 0;
+	int tY = 0;
+	int mapX = 0;
+	int mapY = 0;
+	int mapR = 0;
+	unsigned char* pSrc = srcData;
+	unsigned char* tempData = (unsigned char*)malloc(sizeof(unsigned char) * height * stride);
+	memcpy(tempData, srcData, sizeof(unsigned char) * height * stride);
+	int offset = stride - width * 4;
+	for (int j = 0; j < height; j++)
+	{
+		for (int i = 0; i < width; i++)
+		{
+			tX = i - x;
+			tY = j - y;
+			theta = atan2((float)tY, (float)tX);
+			radius = (int)sqrt((float)(tX * tX + tY * tY));
+			mapR = (int)(sqrt((float)radius * k));
+			mapX = CLIP3(x + (int)(mapR * cos(theta)), 0, width - 1);
+			mapY = CLIP3(y + (int)(mapR * sin(theta)), 0, height - 1);
+			pSrc[0] = tempData[mapX * 4 + mapY * stride];
+			pSrc[1] = tempData[mapX * 4 + mapY * stride + 1];
+			pSrc[2] = tempData[mapX * 4 + mapY * stride + 2];
+			pSrc += 4;
+		}
+		pSrc += offset;
+	}
+	free(tempData);
+	return 0;
+}
