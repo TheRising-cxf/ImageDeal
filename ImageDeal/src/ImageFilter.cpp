@@ -2,15 +2,41 @@
 #include "ColorConver.h"
 #include <cmath>
 #include <string.h>
-/*±ê×¼Ë«±ßÂË²¨
-srcData: Êý¾ÝÔ´
-width: Í¼Ïñ¿í¶È
-hight: Í¼Ïñ¸ß¶È
-channels: Í¼ÏñÍ¨µÀ
-radius: ÂË²¨°ë¾¶
-deltaD:¾àÀë·½²î
-deltaR:ÏñËØ·½²î
-*/
+int F_BeautyCamera_FilterMode(unsigned char* srcData, int width, int height, int channels, int Mode) {
+	int ret = 0;
+	if (Mode == 0) {
+		int radius = 3;
+		int deltaD = 6;
+		int deltaR = 10;
+		F_StdBilateralFilter(srcData, width, height, channels, radius, deltaD, deltaR);
+	}
+	else if (Mode == 1) {
+		int hpRadius = 10.0f * width * height / (594 * 677);
+		F_FastGaussFilter(srcData, width, height, channels, hpRadius);
+	}
+	else if (Mode == 2) {
+		F_SmartBlur(srcData, width, height, channels, 5, 30);
+	}
+	else if (Mode == 3) {
+		F_SurfaceBlur(srcData, width, height, channels, 8, 38);
+	}
+	else if (Mode == 4) {
+		F_GuidedFilter(srcData, width, height, channels, 10, 0.02);
+	}
+	else if (Mode == 5) {
+		F_LSNFilter(srcData, width, height, channels, 5, 2500);
+	}
+	else if (Mode == 6) {
+		F_AnisotropicFilter(srcData, width, height, channels, 10, 10, 0.33, 1);
+	}
+	else if (Mode == 7) {
+		F_MeanShiftFilter(srcData, width, height, channels, 5, 3, 3);
+	}
+	else if (Mode == 9) {
+		F_BeepsFilter(srcData, width, height, channels, 10, 20);
+	}
+	return ret;
+}
 int F_StdBilateralFilter(unsigned char* srcData, int nWidth, int nHeight, int channels, int radius,int deltaD,int deltaR) {
 	int ret = 0;
 	if (srcData == NULL)

@@ -4,3 +4,5 @@
 #include"ColorSkin.h"
 #include "GrindSkin.h"
 #include "ImageFilter.h"
+#include "ImageSharpen.h"
+#include"BeautyCamera.h"
