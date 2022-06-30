@@ -2,7 +2,7 @@
 #ifdef EXPORTS
 #define DLL_EXPORT_IMPORT  _declspec(dllexport)
 #else
-#define DLL_EXPORT_IMPORT  _declspec(dllimport)
+#define DLL_EXPORT_IMPORT  //_declspec(dllimport)
 #endif
 
 #define MIN2(a, b) ((a) < (b) ? (a) : (b))
