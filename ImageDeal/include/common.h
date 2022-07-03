@@ -1,4 +1,5 @@
 #pragma once
+#include<algorithm>
 #ifdef EXPORTS
 #define DLL_EXPORT_IMPORT  _declspec(dllexport)
 #else
@@ -8,7 +9,6 @@
 #define MIN2(a, b) ((a) < (b) ? (a) : (b))
 #define MAX2(a, b) ((a) > (b) ? (a) : (b))
 #define CLIP3(x, a, b) MIN2(MAX2(a,x), b)
-
 const float YCbCrYRF = 0.299F;              // RGB转YCbCr的系数(浮点类型）
 const float YCbCrYGF = 0.587F;
 const float YCbCrYBF = 0.114F;

@@ -523,7 +523,7 @@ static void calcDelta_Similarity(int srcW, int srcH, int tarW, int tarH, double 
 		}
 	}
 }
-static int GetNewImg(unsigned char* oriImg, int width, int height, int stride, unsigned char* tarImg, int tarW, int tarH, int tarStride, int gridSize, double* rDx, double* rDy, double transRatio)
+static int GetNewImg(unsigned char* oriImg, int width, int height, int channels, int gridSize, double* rDx, double* rDy, double transRatio)
 {
 	int i, j;
 	double di, dj;
@@ -532,7 +532,11 @@ static int GetNewImg(unsigned char* oriImg, int width, int height, int stride, u
 	double deltaX, deltaY;
 	double w, h;
 	int ni, nj;
+	int tarH = height;
+	int tarW = width;
+	int stride = width * channels;
 	int pos, posa, posb, posc, posd;
+	unsigned char* tarImg = (unsigned char*)malloc(sizeof(unsigned char)*channels*width*height);
 	for (i = 0; i < tarH; i += gridSize)
 		for (j = 0; j < tarW; j += gridSize) {
 			ni = i + gridSize, nj = j + gridSize;
@@ -557,32 +561,30 @@ static int GetNewImg(unsigned char* oriImg, int width, int height, int stride, u
 					nyi = int(ny);
 					nxi1 = ceil(nx);
 					nyi1 = ceil(ny);
-					pos = (int)(i + di) * tarStride + ((int)(j + dj) << 2);
-					posa = nyi * stride + (nxi << 2);
-					posb = nyi * stride + (nxi1 << 2);
-					posc = nyi1 * stride + (nxi << 2);
-					posd = nyi1 * stride + (nxi1 << 2);
-					tarImg[pos] = (unsigned char)bilinear_interp(ny - nyi, nx - nxi, oriImg[posa], oriImg[posb], oriImg[posc], oriImg[posd]);
-					tarImg[pos + 1] = (unsigned char)bilinear_interp(ny - nyi, nx - nxi, oriImg[posa + 1], oriImg[posb + 1], oriImg[posc + 1], oriImg[posd + 1]);
-					tarImg[pos + 2] = (unsigned char)bilinear_interp(ny - nyi, nx - nxi, oriImg[posa + 2], oriImg[posb + 2], oriImg[posc + 2], oriImg[posd + 2]);
-					tarImg[pos + 3] = (unsigned char)bilinear_interp(ny - nyi, nx - nxi, oriImg[posa + 3], oriImg[posb + 3], oriImg[posc + 3], oriImg[posd + 3]);
+					pos = (int)(i + di) * stride + ((int)(j + dj) *channels);
+					posa = nyi * stride + (nxi *channels);
+					posb = nyi * stride + (nxi1 *channels);
+					posc = nyi1 * stride + (nxi *channels);
+					posd = nyi1 * stride + (nxi1 *channels);
+					for (int n = 0; n < channels; n++) {
+						tarImg[pos + n] = (unsigned char)bilinear_interp(ny - nyi, nx - nxi, oriImg[posa + n], oriImg[posb + n], oriImg[posc + n], oriImg[posd + n]);
+					}
 				}
 		}
+	memcpy(oriImg, tarImg, sizeof(unsigned char)*channels*width*height);
+	free(tarImg);
 	return 0;
 };
-static void F_MLSImageWrapping(unsigned char* oriImg, int width, int height, int channels, int srcPoint[], int dragPoint[], int pointNum, unsigned char* tarImg, int outW, int outH, int outChannels , double transRatio, int preScale, int gridSize, int method)
+void F_MLSImageWrapping(unsigned char* oriImg, int width, int height, int channels, int srcPoint[], int dragPoint[], int pointNum, double transRatio, int preScale, int gridSize, int method)
 {
 	int srcW = width;
 	int srcH = height;
-	int tarW = outW;
-	int tarH = outH;
+	int tarW = width;
+	int tarH = height;
 	double alpha = 1;
-	int nPoint;
 	int len = tarH * tarW;
 	std::vector<PointD> oldDotL, newDotL;
 	double *rDx = NULL, *rDy = NULL;
-	std::vector<PointD> newDotL;
-	std::vector<PointD> oldDotL;
 	PointD point = { 0 };
 	for (int i = 0; i < pointNum; i++)
 	{
@@ -598,10 +600,10 @@ static void F_MLSImageWrapping(unsigned char* oriImg, int width, int height, int
 	memset(rDx, 0, sizeof(double) * len);
 	memset(rDy, 0, sizeof(double) * len);
 	if (method != 0)
-		calcDelta_Similarity(srcW, srcH, tarW, tarH, alpha, gridSize, nPoint, preScale, rDx, rDy, oldDotL, newDotL);
+		calcDelta_Similarity(srcW, srcH, tarW, tarH, alpha, gridSize, pointNum, preScale, rDx, rDy, oldDotL, newDotL);
 	else
-		calcDelta_rigid(srcW, srcH, tarW, tarH, alpha, gridSize, nPoint, preScale, rDx, rDy, oldDotL, newDotL);
-	GetNewImg(oriImg, srcW, srcH, channels, tarImg, tarW, tarH, outChannels, gridSize, rDx, rDy, transRatio);
+		calcDelta_rigid(srcW, srcH, tarW, tarH, alpha, gridSize, pointNum, preScale, rDx, rDy, oldDotL, newDotL);
+	GetNewImg(oriImg, srcW, srcH, channels, gridSize, rDx, rDy, transRatio);
 	if (rDx != NULL)
 		free(rDx);
 	if (rDy != NULL)

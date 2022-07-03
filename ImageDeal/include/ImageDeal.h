@@ -7,3 +7,4 @@
 #include "ImageSharpen.h"
 #include "BeautyCamera.h"
 #include "ImageSpecialEffects.h"
+#include "BaseMath.h"
