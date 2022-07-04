@@ -316,8 +316,6 @@ static void calcDelta_rigid(int srcW, int srcH, int tarW, int tarH, double alpha
 	double *w = new double[nPoint];
 
 	if (nPoint < 2) {
-		//rDx.setTo(0);
-		//rDy.setTo(0);
 		return;
 	}
 	PointD swp, pstar, curV, curVJ, Pi, PiJ, Qi;
@@ -382,10 +380,12 @@ static void calcDelta_rigid(int srcW, int srcH, int tarW, int tarH, double alpha
 					Pi.x = oldDotL[k].x - pstar.x;
 					Pi.y = oldDotL[k].y - pstar.y;
 					PiJ.x = -Pi.y, PiJ.y = Pi.x;
-					tmpP.x = (Pi.x*curV.x + Pi.y*curV.y)* newDotL[k].x -
-						(PiJ.x*curV.x + PiJ.y*curV.y)* newDotL[k].y;
-					tmpP.y = -(Pi.x*curVJ.x + Pi.y*curVJ.y) * newDotL[k].x +
-						(PiJ.x*curVJ.x + PiJ.y*curVJ.y) * newDotL[k].y;
+					Qi.x = newDotL[k].x - qstar.x;
+					Qi.y = newDotL[k].y - qstar.y;
+					tmpP.x = (Pi.x*curV.x + Pi.y*curV.y)* Qi.x -
+						(PiJ.x*curV.x + PiJ.y*curV.y)* Qi.y;
+					tmpP.y = -(Pi.x*curVJ.x + Pi.y*curVJ.y) * Qi.x +
+						(PiJ.x*curVJ.x + PiJ.y*curVJ.y) * Qi.y;
 					tmpP.x *= w[k] / miu_r;
 					tmpP.y *= w[k] / miu_r;
 					newP.x += tmpP.x;
@@ -493,11 +493,11 @@ static void calcDelta_Similarity(int srcW, int srcH, int tarW, int tarH, double 
 					Pi.x = oldDotL[k].x - pstar.x;
 					Pi.y = oldDotL[k].y - pstar.y;
 					PiJ.x = -Pi.y, PiJ.y = Pi.x;
-
-					tmpP.x = (Pi.x*curV.x + Pi.y*curV.y) * newDotL[k].x -
-						(PiJ.x*curV.x + PiJ.y*curV.y) * newDotL[k].y;
-					tmpP.y = -(Pi.x*curVJ.x + Pi.y*curVJ.y) * newDotL[k].x +
-						(PiJ.x*curVJ.x + PiJ.y*curVJ.y) * newDotL[k].y;
+				
+					tmpP.x = (Pi.x*curV.x + Pi.y*curV.y) * (newDotL[k].x - qstar.x) -
+						(PiJ.x*curV.x + PiJ.y*curV.y) * (newDotL[k].y - qstar.y);
+					tmpP.y = -(Pi.x*curVJ.x + Pi.y*curVJ.y) * (newDotL[k].x - qstar.x) +
+						(PiJ.x*curVJ.x + PiJ.y*curVJ.y) * (newDotL[k].y - qstar.y);
 					tmpP.x *= w[k] / miu_s;
 					tmpP.y *= w[k] / miu_s;
 					newP.x += tmpP.x;
