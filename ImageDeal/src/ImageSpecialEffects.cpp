@@ -609,121 +609,71 @@ void F_MLSImageWrapping(unsigned char* oriImg, int width, int height, int channe
 	if (rDy != NULL)
 		free(rDy);
 };
-//int f_FaceLift(unsigned char* srcData, int width, int height, int stride, int centerX, int centerY, int rmax, int mx, int my, int strength)
-//{
-//	int ret = 0;
-//	unsigned char* pSrc = srcData;
-//	unsigned char* tempData = (unsigned char*)malloc(sizeof(unsigned char) * height * stride);
-//	memcpy(tempData, srcData, sizeof(unsigned char) * height * stride);
-//	for (int j = 0; j < height; j++)
-//	{
-//		for (int i = 0; i < width; i++)
-//		{
-//			float dis = sqrt((float)(centerX - i) * (centerX - i) + (centerY - j) * (centerY - j));
-//			if (dis < rmax)
-//			{
-//				float xc = (i - centerX) * (i - centerX) + (j - centerY) * (j - centerY);
-//				float mc = (mx - centerX) * (mx - centerX) + (my - centerY) * (my - centerY);
-//				float tx = (rmax * rmax - xc);
-//				float d = tx / (tx + mc * 100.0f / strength);
-//				d = d * d;
-//				int px = CLIP3(i - (mx - centerX) * d * (1.0f - dis / rmax), 0, width - 1);
-//				int py = CLIP3(j - (my - centerY) * d * (1.0f - dis / rmax), 0, height - 1);
-//				int pos = (px << 2) + py * stride;
-//				pSrc[0] = tempData[pos];
-//				pSrc[1] = tempData[pos + 1];
-//				pSrc[2] = tempData[pos + 2];
-//			}
-//			pSrc += 4;
-//		}
-//	}
-//	free(tempData);
-//	return ret;
-//};
-//int f_BigEye(unsigned char* srcData, int width, int height, int stride, int cenX, int cenY, int radius, int intensity)
-//{
-//	int ret = 0;
-//	int nx = CLIP3(cenX - radius, 0, width - 1);
-//	int ny = CLIP3(cenY - radius, 0, height - 1);
-//	int nw = CLIP3(cenX + radius, 0, width - 1);
-//	int nh = CLIP3(cenY + radius, 0, height - 1);
-//	int D = radius * radius;
-//	float k0 = intensity / 100.0f;
-//	unsigned char* tempData = (unsigned char*)malloc(sizeof(unsigned char) * height * stride);
-//	memcpy(tempData, srcData, sizeof(unsigned char) * height * stride);
-//	for (int j = ny; j < nh; j++)
-//	{
-//		for (int i = nx; i < nw; i++)
-//		{
-//			float dis = (i - cenX) * (i - cenX) + (j - cenY) * (j - cenY);
-//			if (dis < D)
-//			{
-//				float k = 1.0f - k0 * (1.0f - dis / D);
-//
-//				//////////////////可以使用双线性插值，效果更好///////////////////////////////////////
-//				int px = CLIP3((i - cenX) * k + cenX, 0, width - 1);
-//				int py = CLIP3((j - cenY) * k + cenY, 0, height - 1);
-//				/////////////////////////////////////////////////////////////////////////////////////
-//				int pos_new = px * 4 + py * stride;
-//				int pos = i * 4 + j * stride;
-//				srcData[pos] = tempData[pos_new];
-//				srcData[pos + 1] = tempData[pos_new + 1];
-//				srcData[pos + 2] = tempData[pos_new + 2];
-//			}
-//		}
-//	}
-//	free(tempData);
-//	return ret;
-//};
-//int f_AutoBigeye(unsigned char* srcData, int width, int height, int stride, int facePoints[])
-//{
-//	int ret = 0;
-//	//cenx, ceny
-//	int cenX_left = facePoints[2 * 95];
-//	int cenY_left = facePoints[2 * 95 + 1];
-//	int cenX_right = facePoints[2 * 96];
-//	int cenY_right = facePoints[2 * 96 + 1];
-//	//compute radius
-//	float dis_left = sqrt((float)(facePoints[2 * 39] - facePoints[2 * 45]) * (facePoints[2 * 39] - facePoints[2 * 45]) + (facePoints[2 * 39 + 1] - facePoints[2 * 45 + 1]) * (facePoints[2 * 39 + 1] - facePoints[2 * 45 + 1]));
-//	float dis_right = sqrt((float)(facePoints[2 * 51] - facePoints[2 * 57]) * (facePoints[2 * 51] - facePoints[2 * 57]) + (facePoints[2 * 51 + 1] - facePoints[2 * 57 + 1]) * (facePoints[2 * 51 + 1] - facePoints[2 * 57 + 1]));
-//	int radius = MAX2(dis_left, dis_right);
-//	//compute intensity
-//	int intensity = 15 * 512 * 512 / (width * height);
-//	ret = f_BigEye(srcData, width, height, stride, cenX_left, cenY_left, radius, intensity);
-//	ret = f_BigEye(srcData, width, height, stride, cenX_right, cenY_right, radius, intensity);
-//	return ret;
-//};
-//int f_AutoFacelift(unsigned char* srcData, int width, int height, int stride, int facePoints[], int intensity)
-//{
-//	int ret = 0;
-//	float K1, K2;
-//	float P5x = facePoints[2 * 1];
-//	float P5y = facePoints[2 * 1 + 1];
-//	float P6x = facePoints[2 * 5];
-//	float P6y = facePoints[2 * 5 + 1];
-//	float P7x = facePoints[2 * 9];
-//	float P7y = facePoints[2 * 9 + 1];
-//	float P8x = facePoints[2 * 13];
-//	float P8y = facePoints[2 * 13 + 1];
-//	float P9x = facePoints[2 * 17];
-//	float P9y = facePoints[2 * 17 + 1];
-//	float P0x = facePoints[2 * 98];
-//	float P0y = facePoints[2 * 98 + 1];
-//	//compute P' after facelift
-//	float K = 0.1f * intensity / 100;
-//	float P6X, P6Y, P8X, P8Y;
-//	P6X = P6x + (P0x - P6x) * K;
-//	P6Y = P6y + (P0y - P6y) * K;
-//	P8X = P8x + (P0x - P8x) * K;
-//	P8Y = P8y + (P0y - P8y) * K;
-//	//compute face rectangle
-//	float dis = sqrt(((float)facePoints[2 * 98] - facePoints[2 * 9])*((float)facePoints[2 * 98] - facePoints[2 * 9]) + ((float)facePoints[2 * 98 + 1] - facePoints[2 * 9 + 1])*((float)facePoints[2 * 98 + 1] - facePoints[2 * 9 + 1])) * 1.1;
-//	int minx = CLIP3(P0x - dis, 0, width - 1);
-//	int miny = CLIP3(P0y - dis, 0, height - 1);
-//	int maxx = CLIP3(P0x + dis, 0, width - 1);
-//	int maxy = CLIP3(P0y + dis, 0, height - 1);
-//	int aPoints[2 * 9] = { minx, miny, minx, maxy, maxx, maxy, maxx, miny, P5x, P5y, P6x, P6y, P7x, P7y, P8x, P8y, P9x, P9y };
-//	int bPoints[2 * 9] = { minx, miny, minx, maxy, maxx, maxy, maxx, miny, P5x, P5y, P6X, P6Y, P7x, P7y, P8X, P8Y, P9x, P9y };
-//	ret = F_IDW(srcData, width, height, stride, bPoints, aPoints, 9);
-//	return ret;
-//};
+int F_FaceLift(unsigned char* srcData, int width, int height, int channels, int centerX, int centerY, int rmax, int mx, int my, int strength)
+{
+	int ret = 0;
+	unsigned char* pSrc = srcData;
+	int stride = channels * width;
+	unsigned char* tempData = (unsigned char*)malloc(sizeof(unsigned char) * height * stride);
+	memcpy(tempData, srcData, sizeof(unsigned char) * height * stride);
+	for (int j = 0; j < height; j++)
+	{
+		for (int i = 0; i < width; i++)
+		{
+			float dis = sqrt((float)(centerX - i) * (centerX - i) + (centerY - j) * (centerY - j));
+			if (dis < rmax)
+			{
+				float xc = (i - centerX) * (i - centerX) + (j - centerY) * (j - centerY);
+				float mc = (mx - centerX) * (mx - centerX) + (my - centerY) * (my - centerY);
+				float tx = (rmax * rmax - xc);
+				float d = tx / (tx + mc * 100.0f / strength);
+				d = d * d;
+				int px = CLIP3(i - (mx - centerX) * d * (1.0f - dis / rmax), 0, width - 1);
+				int py = CLIP3(j - (my - centerY) * d * (1.0f - dis / rmax), 0, height - 1);
+				int pos = (px *channels) + py * stride;
+				pSrc[0] = tempData[pos];
+				pSrc[1] = tempData[pos + 1];
+				pSrc[2] = tempData[pos + 2];
+			}
+			pSrc += channels;
+		}
+	}
+	free(tempData);
+	return ret;
+};
+int F_BigEye(unsigned char* srcData, int width, int height, int channels, int cenX, int cenY, int radius, int intensity)
+{
+	int ret = 0;
+	int nx = CLIP3(cenX - radius, 0, width - 1);
+	int ny = CLIP3(cenY - radius, 0, height - 1);
+	int nw = CLIP3(cenX + radius, 0, width - 1);
+	int nh = CLIP3(cenY + radius, 0, height - 1);
+	int D = radius * radius;
+	float k0 = intensity / 100.0f;
+	int stride = channels * width;
+	unsigned char* tempData = (unsigned char*)malloc(sizeof(unsigned char) * height * stride);
+	memcpy(tempData, srcData, sizeof(unsigned char) * height * stride);
+	for (int j = ny; j < nh; j++)
+	{
+		for (int i = nx; i < nw; i++)
+		{
+			float dis = (i - cenX) * (i - cenX) + (j - cenY) * (j - cenY);
+			if (dis < D)
+			{
+				float k = 1.0f - k0 * (1.0f - dis / D);
+
+				//////////////////可以使用双线性插值，效果更好///////////////////////////////////////
+				int px = CLIP3((i - cenX) * k + cenX, 0, width - 1);
+				int py = CLIP3((j - cenY) * k + cenY, 0, height - 1);
+				/////////////////////////////////////////////////////////////////////////////////////
+				int pos_new = px * channels + py * stride;
+				int pos = i * channels + j * stride;
+				srcData[pos] = tempData[pos_new];
+				srcData[pos + 1] = tempData[pos_new + 1];
+				srcData[pos + 2] = tempData[pos_new + 2];
+			}
+		}
+	}
+	free(tempData);
+	return ret;
+};
