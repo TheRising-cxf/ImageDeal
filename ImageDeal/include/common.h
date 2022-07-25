@@ -1,5 +1,6 @@
 #pragma once
 #include<algorithm>
+#include <config.h>
 #ifdef EXPORTS
 #define DLL_EXPORT_IMPORT  _declspec(dllexport)
 #else
